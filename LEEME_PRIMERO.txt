@@ -1,0 +1,15 @@
+*** ESTO ES CODIGO FUENTE, NO UNA APP INSTALABLE ***
+
+El Homebrew Channel solo muestra carpetas dentro de SD:/apps/ que contengan un archivo
+"boot.dol" (o "boot.elf") REAL, compilado para Wii. Este paquete NO incluye ese archivo
+(el entorno donde se preparo no tiene el compilador de la Wii), por eso copiarlo a la SD
+no hace que aparezca en el Homebrew Channel.
+
+Pasos:
+  1) Compila el proyecto (ver README.md: GitHub Actions, Docker o devkitPro).
+     Resultado: carpeta apps/UndertaleYellow con boot.dol + meta.xml + icon.png.
+  2) Comprueba el resultado:   python3 tools/verificar.py apps/UndertaleYellow
+     (debe terminar en "RESULTADO: CORRECTO").
+  3) Copia la carpeta UndertaleYellow a SD:/apps/  (SD en FAT32).
+
+Para el juego COMPLETO (no el demake) lee docs/INFORME_AUDITORIA_Y_DECISION.md.

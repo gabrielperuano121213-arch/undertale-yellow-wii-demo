@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<app version="1">
+  <name>Undertale Yellow (Demo)</name>
+  <coder>Demake de fans - juego original: Team Undertale Yellow</coder>
+  <version>0.1</version>
+  <release_date>20261109000000</release_date>
+  <short_description>Demo jugable de Undertale Yellow para Wii</short_description>
+  <long_description>Demake de Undertale Yellow para Wii: sala de las ruinas, dialogos, menu y una batalla con el alma amarilla que dispara.
+
+Cruceta: mover (Wiimote en horizontal; + alterna vertical)
+Boton 2 = Z (confirmar / disparar)
+Boton 1 = X (cancelar / ir lento)
+Boton B = C (menu)
+HOME: volver al Homebrew Channel
+
+Juego original: Team Undertale Yellow (fan game gratuito).</long_description>
+</app>

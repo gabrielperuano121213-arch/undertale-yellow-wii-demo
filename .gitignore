@@ -1,0 +1,7 @@
+build/
+apps/
+*.elf
+*.dol
+*.map
+*.lst
+*.ppm
