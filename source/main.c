@@ -2,7 +2,7 @@
  *
  * Capa de plataforma: inicializa el video, lee el Wiimote y muestra el framebuffer del juego.
  *
- *   Cruceta ......... moverse (Wiimote siempre en horizontal)
+ *   Cruceta ......... moverse (Wiimote en horizontal; con + se alterna a vertical)
  *   Boton 2 ......... Z  (confirmar / disparar con el alma amarilla)
  *   Boton 1 ......... X  (cancelar / mover mas lento en batalla)
  *   Boton B ......... C  (menu)
@@ -12,7 +12,7 @@
 #include <wiiuse/wpad.h>
 #include <stdlib.h>
 #include <stdint.h>
-#include <ogc/lwp_watchdog.h>
+
 #include "game.h"
 #include "gfx.h"
 
@@ -118,6 +118,7 @@ int main(int argc, char **argv)
         WPAD_ScanPads();
         uint32_t down = WPAD_ButtonsDown(0);
         if (down & WPAD_BUTTON_HOME) break;       /* vuelve al Homebrew Channel */
+        if (down & WPAD_BUTTON_PLUS) sideways = !sideways;
         uint32_t in = map_buttons(WPAD_ButtonsHeld(0), sideways);
         acc |= in;
 

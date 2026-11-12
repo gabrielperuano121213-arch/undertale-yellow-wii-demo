@@ -4,8 +4,9 @@
 #include <string.h>
 #include "game.h"
 #include "gfx.h"
+#include "core/utils.h"
 
-enum { S_TITLE, S_ROOM, S_DIALOG, S_MENU, S_BATTLE, S_GAMEOVER };
+enum { S_TITLE, S_ROOM, S_DIALOG, S_MENU, S_BATTLE, S_GAMEOVER, S_TRANSITION };
 enum { B_INTRO, B_MENU, B_FIGHT, B_ATTACK, B_STRIKE, B_ACT, B_ITEM, B_MERCY, B_TEXT, B_SHRINK, B_DODGE, B_GROW };
 enum { AFTER_NONE, AFTER_BATTLE };               /* que pasa al acabar un dialogo */
 enum { NEXT_TURN, NEXT_WIN, NEXT_FLEE };         /* que pasa al acabar un texto de batalla */
@@ -24,10 +25,7 @@ static const int BTN_X[4] = { 16, 92, 172, 250 };
 
 static int state, tick;
 static uint32_t held, pressed, prev_held;
-static unsigned rng_s = 0x2545F491u;
 
-static int rnd(int n) { rng_s = rng_s * 1664525u + 1013904223u; return (int)((rng_s >> 12) % (unsigned)n); }
-static int iabs(int v) { return v < 0 ? -v : v; }
 static int hit(int ax, int ay, int aw, int ah, int bx, int by, int bw, int bh)
 {
     return ax < bx + bw && bx < ax + aw && ay < by + bh && by < ay + ah;
@@ -40,6 +38,12 @@ static int dummy_state;                          /* 0 nuevo, 1 perdonado, 2 derr
 static int menu_sel, menu_view;
 static char tb[128];                             /* temporal para dibujar */
 static char msg[96];                             /* mensaje persistente (texto de batalla) */
+static int current_room = 0;
+static int trans_timer = 0;
+static int kills_in_room[32] = {0};
+static int encounters_done[32] = {0};
+static int encounters_required[32] = {0};
+static int genocide_active = 0;
 
 /* ---------------------------------------------------------------- texto con efecto maquina de escribir */
 static const char *ty_s = "";
@@ -89,9 +93,9 @@ typedef struct { int x, y, vx, vy, on; } Obj;    /* 1/16 de pixel */
 static Obj pel[24], shot[6];
 
 static const char *const FLAVOR[3] = {
-    "* The dummy stands there,\n  doing dummy things.",
-    "* Smells like cotton and\n  determination.",
-    "* The dummy is... staring?"
+    "* A creature from the Ruins\n  blocks the way!",
+    "* Smells like moss and\n  old stone.",
+    "* The enemy looks wary."
 };
 
 static void start_battle(void)
@@ -104,7 +108,16 @@ static void start_battle(void)
 static void end_battle(int win)
 {
     state = S_ROOM;
-    if (win) dummy_state = killed ? 2 : 1;
+    if (win) {
+        if (killed) {
+            dummy_state = 2;
+            if (genocide_active || encounters_required[current_room] > 0) {
+                kills_in_room[current_room]++;
+            }
+        } else {
+            dummy_state = 1;
+        }
+    }
 }
 
 static void btext(const char *s, int next) { ty_set(s); next_after = next; bst = B_TEXT; }
@@ -167,7 +180,7 @@ static void battle_update(void)
 {
     switch (bst) {
     case B_INTRO:
-        if (++btimer >= 36) { bst = B_MENU; ty_set("* TRAINING DUMMY blocks the\n  way!"); }
+        if (++btimer >= 36) { bst = B_MENU; ty_set("* ENEMY blocks the\n  way!"); }
         break;
     case B_MENU:
         ty_step();
@@ -202,8 +215,8 @@ static void battle_update(void)
         else if (pressed & IN_UP) bsub = 0;
         else if (pressed & IN_DOWN) bsub = 1;
         else if (pressed & IN_Z) {
-            if (bsub == 0) btext("* TRAINING DUMMY - ATK 0 DEF 0\n* A fake foe for practice.\n* Dodge its pellets with care.", NEXT_TURN);
-            else { spareable = 1; btext("* You cheer for the dummy.\n* It seems... content.", NEXT_TURN); }
+            if (bsub == 0) btext("* ENEMY - ATK ? DEF ?\n* A strange creature.\n* Seems lost in these ruins.", NEXT_TURN);
+            else { spareable = 1; btext("* You show mercy.\n* The enemy relaxes.", NEXT_TURN); }
         }
         break;
     case B_ITEM:
@@ -288,7 +301,17 @@ static void draw_battle(void)
         }
         return;
     }
-    if (!e_gone) gfx_sprite(&img_dummy, 160 + (shake > 0 ? ((shake & 1) ? 4 : -4) : 0), 112);
+    if (!e_gone) {
+        /* Dibuja enemigo de Ruinas/Dark Ruins */
+        int ex = 160 + (shake > 0 ? ((shake & 1) ? 4 : -4) : 0);
+        int ey = 112;
+        /* Dibujar enemigo simple (tipo Froggit/Dark Ruins style) */
+        gfx_rect(ex-12, ey-8, 24, 16, C_WHITE);
+        gfx_rect(ex-10, ey-6, 20, 12, C_GRAY);
+        gfx_rect(ex-6, ey-4, 4, 4, C_WHITE);
+        gfx_rect(ex+2, ey-4, 4, 4, C_WHITE);
+        gfx_rect(ex-4, ey+2, 8, 2, C_BLACK);
+    }
 
     gfx_rect(bx - 3, by - 3, bw + 6, bh + 6, C_WHITE);
     gfx_rect(bx, by, bw, bh, C_BLACK);
@@ -356,6 +379,29 @@ static void interact(void)
     }
 }
 
+static void try_random_encounter(void)
+{
+    /* Solo en ciertas habitaciones y si hay encuentros pendientes para genocida */
+    if (current_room >= 0 && current_room <= 10) {
+        if (genocide_active) {
+            if (kills_in_room[current_room] >= encounters_required[current_room] && encounters_required[current_room] > 0) {
+                /* Ya no hay nadie */
+                say(AFTER_NONE, 1, "* Pero nadie vino...", NULL);
+                return;
+            }
+            if (rnd(100) < 15 && kills_in_room[current_room] < encounters_required[current_room]) {
+                start_battle();
+                return;
+            }
+        } else {
+            if (rnd(100) < 10) {
+                start_battle();
+                return;
+            }
+        }
+    }
+}
+
 static void room_update(void)
 {
     int dx = !!(held & IN_RIGHT) - !!(held & IN_LEFT), dy = !!(held & IN_DOWN) - !!(held & IN_UP);
@@ -369,6 +415,7 @@ static void room_update(void)
             if (dy && !blocked(px, py + dy)) py += dy;
         }
         walk_t++;
+        if (walk_t % 20 == 0) try_random_encounter();
     } else walk_t = 0;
 }
 
@@ -397,7 +444,17 @@ static void gameover_update(void)
 {
     go_timer++;
     if (go_timer > 60 && (pressed & IN_Z)) {
-        hp = hpmax; snacks = 2; dummy_state = 0; px = START_X; py = START_Y; face = 0; state = S_ROOM;
+        hp = hpmax; snacks = 2; dummy_state = 0; px = START_X; py = START_Y; face = 0; current_room = 0; state = S_ROOM;
+    }
+}
+
+static void transition_update(void)
+{
+    trans_timer++;
+    if (trans_timer >= 20) {
+        /* Cambiar de sala aquí - por ahora vuelve a ROOM */
+        trans_timer = 0;
+        state = S_ROOM;
     }
 }
 
@@ -454,6 +511,7 @@ static void draw_title(void)
 {
     gfx_img(&img_splash, 0, 0);
     if ((tick / 15) % 2 == 0) text_center(&font_stats, 186, "PRESS 2 TO START", C_WHITE, 2);
+    text_center(&font_stats, 210, "DEMO 1.1 - TECH BASE", C_YELLOW, 1);
     text_center(&font_stats, 220, "FAN DEMAKE OF UNDERTALE YELLOW", C_GRAY, 1);
     text_center(&font_stats, 229, "ORIGINAL GAME BY TEAM UNDERTALE YELLOW", C_GRAY, 1);
 }
@@ -466,6 +524,16 @@ static void draw_gameover(void)
     if (go_timer > 60 && (tick / 15) % 2 == 0) text_center(&font_stats, 190, "PRESS 2 TO TRY AGAIN", C_GRAY, 2);
 }
 
+static void draw_transition(void)
+{
+    int alpha = trans_timer < 10 ? trans_timer * 25 : (20 - trans_timer) * 25;
+    if (alpha < 0) alpha = 0;
+    if (alpha > 255) alpha = 255;
+    gfx_clear(C_BLACK);
+    /* Fade simple - pantalla negra durante transición */
+    (void)alpha;
+}
+
 static void render(void)
 {
     switch (state) {
@@ -474,6 +542,7 @@ static void render(void)
     case S_DIALOG: draw_room(); draw_dialog(); break;
     case S_MENU: draw_room(); draw_menu(); break;
     case S_BATTLE: draw_battle(); break;
+    case S_TRANSITION: draw_transition(); break;
     default: draw_gameover(); break;
     }
 }
@@ -484,6 +553,9 @@ void game_init(void)
     state = S_TITLE; tick = 0; prev_held = 0;
     hp = hpmax; snacks = 2; dummy_state = 0;
     px = START_X; py = START_Y; face = 0; walk_t = 0;
+    current_room = 0;
+    genocide_active = 1; /* Modo genocida para pruebas segun lo pedido */
+    for (int i = 0; i < 32; i++) { kills_in_room[i] = 0; encounters_done[i] = 0; encounters_required[i] = 5; }
     render();
 }
 
@@ -498,6 +570,7 @@ void game_tick(uint32_t h)
     case S_DIALOG: dialog_update(); break;
     case S_MENU: menu_update(); break;
     case S_BATTLE: battle_update(); break;
+    case S_TRANSITION: transition_update(); break;
     default: gameover_update(); break;
     }
     render();
