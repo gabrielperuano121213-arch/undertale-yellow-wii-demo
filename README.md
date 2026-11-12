@@ -20,11 +20,12 @@ Sin música ni sonido todavía.
 
 | Juego            | Wiimote       |
 |------------------|---------------|
-| Moverse          | Cruceta (Wiimote siempre horizontal) |
+| Moverse          | Cruceta       |
 | **Z** confirmar / disparar | Botón **2** |
 | **X** cancelar / ir lento  | Botón **1** |
 | **C** menú       | Botón **B**   |
 | Volver al Homebrew Channel | HOME |
+| Alternar horizontal ↔ vertical | + |
 
 ## 1) Conseguir `boot.dol` (elige UNA opción)
 

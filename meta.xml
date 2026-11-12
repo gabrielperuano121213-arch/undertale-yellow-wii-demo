@@ -2,10 +2,10 @@
 <app version="1">
   <name>Undertale Yellow (Demo)</name>
   <coder>Demake de fans - juego original: Team Undertale Yellow</coder>
-  <version>0.1</version>
-  <release_date>20261109000000</release_date>
-  <short_description>Demo jugable de Undertale Yellow para Wii</short_description>
-  <long_description>Demake de Undertale Yellow para Wii: sala de las ruinas, dialogos, menu y una batalla con el alma amarilla que dispara.
+  <version>1.1</version>
+  <release_date>20261112000000</release_date>
+  <short_description>Demo jugable de Undertale Yellow para Wii - Demo 1.1</short_description>
+  <long_description>Demake de Undertale Yellow para Wii: base técnica estable con sistema de salas, transiciones, encuentros y sistema de batalla.
 
 Cruceta: mover (Wiimote en horizontal; + alterna vertical)
 Boton 2 = Z (confirmar / disparar)

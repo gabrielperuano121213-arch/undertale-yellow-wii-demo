@@ -20,9 +20,9 @@ include $(DEVKITPPC)/wii_rules
 #---------------------------------------------------------------------------------
 TARGET	:=	boot
 BUILD	:=	build
-SOURCES	:=	source
+SOURCES	:=	source source/core source/world source/dialogue source/battle source/ui source/sys source/data
 DATA	:=	
-INCLUDES	:=	
+INCLUDES	:=	source source/core source/world source/dialogue source/battle source/ui source/sys source/data	
 
 #---------------------------------------------------------------------------------
 # opciones de compilacion
