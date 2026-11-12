@@ -12,7 +12,7 @@
 #include <wiiuse/wpad.h>
 #include <stdlib.h>
 #include <stdint.h>
-
+#include <ogc/lwp_watchdog.h>
 #include "game.h"
 #include "gfx.h"
 
