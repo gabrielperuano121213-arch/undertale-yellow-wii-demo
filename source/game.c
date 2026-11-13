@@ -93,9 +93,9 @@ typedef struct { int x, y, vx, vy, on; } Obj;    /* 1/16 de pixel */
 static Obj pel[24], shot[6];
 
 static const char *const FLAVOR[3] = {
-    "* A creature from the Ruins\n  blocks the way!",
-    "* Smells like moss and\n  old stone.",
-    "* The enemy looks wary."
+    "* The dummy stands there,\n  doing dummy things.",
+    "* Smells like cotton and\n  determination.",
+    "* The dummy is... staring?"
 };
 
 static void start_battle(void)
@@ -180,7 +180,7 @@ static void battle_update(void)
 {
     switch (bst) {
     case B_INTRO:
-        if (++btimer >= 36) { bst = B_MENU; ty_set("* ENEMY blocks the\n  way!"); }
+        if (++btimer >= 36) { bst = B_MENU; ty_set("* TRAINING DUMMY blocks the\n  way!"); }
         break;
     case B_MENU:
         ty_step();
@@ -215,8 +215,8 @@ static void battle_update(void)
         else if (pressed & IN_UP) bsub = 0;
         else if (pressed & IN_DOWN) bsub = 1;
         else if (pressed & IN_Z) {
-            if (bsub == 0) btext("* ENEMY - ATK ? DEF ?\n* A strange creature.\n* Seems lost in these ruins.", NEXT_TURN);
-            else { spareable = 1; btext("* You show mercy.\n* The enemy relaxes.", NEXT_TURN); }
+            if (bsub == 0) btext("* TRAINING DUMMY - ATK 0 DEF 0\n* A fake foe for practice.\n* Dodge its pellets with care.", NEXT_TURN);
+            else { spareable = 1; btext("* You cheer for the dummy.\n* It seems... content.", NEXT_TURN); }
         }
         break;
     case B_ITEM:
@@ -301,17 +301,7 @@ static void draw_battle(void)
         }
         return;
     }
-    if (!e_gone) {
-        /* Dibuja enemigo de Ruinas/Dark Ruins */
-        int ex = 160 + (shake > 0 ? ((shake & 1) ? 4 : -4) : 0);
-        int ey = 112;
-        /* Dibujar enemigo simple (tipo Froggit/Dark Ruins style) */
-        gfx_rect(ex-12, ey-8, 24, 16, C_WHITE);
-        gfx_rect(ex-10, ey-6, 20, 12, C_GRAY);
-        gfx_rect(ex-6, ey-4, 4, 4, C_WHITE);
-        gfx_rect(ex+2, ey-4, 4, 4, C_WHITE);
-        gfx_rect(ex-4, ey+2, 8, 2, C_BLACK);
-    }
+    if (!e_gone) gfx_sprite(&img_dummy, 160 + (shake > 0 ? ((shake & 1) ? 4 : -4) : 0), 112);
 
     gfx_rect(bx - 3, by - 3, bw + 6, bh + 6, C_WHITE);
     gfx_rect(bx, by, bw, bh, C_BLACK);
